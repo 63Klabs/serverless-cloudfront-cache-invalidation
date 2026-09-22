@@ -71,13 +71,11 @@ sam --version
 
 ## Deployment Steps
 
-This stack is designed to be deployed "ready-to-run for CI/CD" using [Atlantis Platform Templates and Scripts from 63Klabs](https://github.com/63Klabs/atlantis-cfn-configuration-repo-for-serverless-deployments). 
+This application is **Ready-to-Deploy-and-Run** with the [63Klabs Atlantis DevOps Platform for Serverless Deployments on AWS](https://atlantis.63klabs.net)
 
-Like any other project, you can skip the Atlantis platform and go at it on your own using `sam build` and `sam deploy` from the CLI within the `application-infrastructure` directory.
+Like any other project, you can skip the Atlantis platform and go at it on your own using `sam deploy` from the CLI within the application-infrastructure directory.
 
-However, if you are managing many projects manually (especially on your own or part of a small team), the Atlantis platform is highly recommended as it implements Platform Engineering and AWS best practices. Plus it utilizes AWS native resources including SAM deployments and CloudFormation without the need of proprietary DevOps tools. Everything is API, CloudFormation template, and SAM CLI based.
-
-If this is your first time deploying to AWS, or deployments have been difficult to manage in the past and you are looking into automating some of your tasks, _please_ look at the 63Klabs Atlantis Templates and Scripts Platform. (If you traditionally deploy applications through the Web Console, _PLEASE_ look into Atlantis! We have many, many [tutorials to get you started](https://github.com/63Klabs/atlantis-tutorials) deploying production-ready applications!) using Platform Engineering and CI/CD best practices with scripts as easy as create_repo.py, config.py, and deploy.py that all use SAM CONFIG files written in TOML.
+However, the [Atlantis DevOps Platform](https://atlantis.63klabs.net) is highly recommended for individual developers and small teams as it implements Platform Engineering, AWS best practices, and deployment automation. It utilizes AWS native resources including SAM deployments and CloudFormation without the need of proprietary DevOps tools. Everything is API, CloudFormation template, and SAM CLI based as well as AI-ready.
 
 ### Step 1: Review Configuration Options
 
@@ -109,56 +107,39 @@ Atlantis uses the following naming conventions:
 
 ### Step 3: Create and Ready the Repository
 
-Infrastructure deployment using the 63Klabs Atlantis Templates and Scripts Platform are orchestrated from your organization's SAM Configuration repository.
+Infrastructure deployment using the 63Klabs Atlantis DevOps Platform are orchestrated from your organization's SAM Configuration repository.
 
 The following steps are performed from the command line from within the SAM Configuration repository.
 
 ```bash
-## -------------------------
-## CREATE THE REPO
-
-# > From your organization's SAM CONFIG repo:
-
-# Use the create_repo script to create, configure, and seed a repository
-# With the Cache Invalidator
-./cli/create_repo.py YOUR_GITHUB/YOUR_REPO_NAME --provider github
-# -- OR -- if using CodeCommit:
-./cli/create_repo.py YOUR_REPO_NAME --provider codecommit
-
-# > Choose 03-serverless-cloudfront-cache-invalidation.zip 
-#   From the list of Available application starters and follow the prompts
-
-# > Copy the HTTPS URL after creation
-```
-
-Open a new terminal window and make sure you are in the directory where you store your local repositories.
-
-Perform the following steps to clone and populate the `test` branch of your Invalidator Service repository.
-
-```bash
-## -------------------------
-## MERGE and PUSH to TEST BRANCH
-
-# > Change OUT of the SAM CONFIG repo to where you clone app repos
-cd .. # Be sure to do the following OUTSIDE of the SAM CONFIG repo! Open a new terminal if necessary
-
-# Clone your repository and perform your first deployment AS-IS just to make sure it works
-git clone YOUR_REPO_HTTPS_URL
-cd YOUR_REPO_NAME
-
-# switch dev
-git switch dev
-# If you make any changes, ensure you commit and push the changes back to dev 
-# (however, try a first-time deploy as-is to make troubleshooting easier)
-
-# You must merge dev into test before creating the pipeline (so it has something to deploy)
-git switch test
-git merge dev
-git push
+# Use the create_repo script to create, configure, and seed a repository with the Cache Invalidator
+./cli/create_repo.py YOUR_REPO_NAME --source https://github.com/63Klabs/serverless-cloudfront-cache-invalidation --profile default
 ```
 
 ### Step 4: Deploy the Invalidator Service Pipeline and Application Stack
 
+```bash
+# Create a pipeline for the test branch
+./cli/config.py pipeline PREFIX YOUR_PROJECT_ID test --profile default
+# Choose template-pipeline.yml (CodeCommit source) or template-pipeline-github.yml
+
+# Deploy the pipeline (if you didn't choose to deploy right away from the config script)
+./cli/deploy.py pipeline PREFIX YOUR_PROJECT_ID test --profile default
+```
+
+Once the pipeline is created the first deployment will automatically kick off. You can follow it in the web console using the link provided in the Output.
+
+Make sure it deploys without errors before going to the `dev` branch and making changes.
+
+Clone the repository to your local machine:
+
+```bash
+git clone HTTPS_CLONE_URL
+
+cd YOUR_CLONED_REPO
+
+git switch dev
+```
 ```bash
 ## -------------------------
 ## DEPLOY INVALIDATOR STACK - TEST
@@ -167,26 +148,21 @@ git push
 #       For now we will just deploy a test instance of the stack and have
 #       Our buckets and distributions use that.
 
-# > These next commands MUST be done from the SAM CONFIG repo 
-# Go back to your SAM CONFIG repo (or SAM CONFIG terminal if you kept it open)
-cd ../YOUR_DEVOPS_SAM_CONFIG_REPO
-
 # Create the test environment and deploy
-./cli/config.py pipeline PREFIX PROJECT_ID test
+./cli/config.py pipeline PREFIX cdn-invalidator test
 # > When prompted:
 #   Choose template-pipeline.yml (or template-pipeline-github.yml if deploying from a gh repo)
 #   Follow the stack parameter prompts (leave S3StaticHostBucket blank)
 
 # Don't forget to deploy if you skipped deployment during config
-./cli/deploy.py pipeline PREFIX PROJECT_ID test
-
-# You can follow the deployment in the web console
-# After the Pipleline stack has deployed, it will deploy the Application stack
-# Once the Invalidator Application stack has deployed, 
-# Go to the Invalidator Application stack Output section in the web console
-# > Copy CloudFrontCacheInvalidatorArn
-# You will need this for your S3 bucket configuration
+./cli/deploy.py pipeline PREFIX cdn-invalidator test
 ```
+
+Once the pipeline is created the first deployment will automatically kick off. You can follow it in the web console using the link provided in the Output.
+
+Make sure it deploys without errors before going making changes to the application.
+
+Once the Invalidator Application stack has deployed, go to the `PREFIX-cdn-invalidator-test-application` stack's Output section in the web console and copy `CloudFrontCacheInvalidatorArn`. You will need this for your S3 bucket configuration.
 
 ### Step 5: Deploy the S3 Buckets
 
@@ -197,7 +173,7 @@ The following steps are performed from the command line from within the SAM CONF
 ## CREATE THE S3 BUCKET THAT WILL SERVE AS THE STATIC WEB HOST
 ## The bucket will store both test and prod static assets
 
-./cli/config.py storage PREFIX MY_STATIC_ASSETS
+./cli/config.py storage PREFIX MY_STATIC_ASSETS --profile default
 # > CHOOSE TEMPLATE: template-storage-s3-oac-for-cloudfront.yml
 # > SET PARAMETER: CloudFrontCacheInvalidatorArn
 # > Copy the following from OUTPUTS
@@ -205,7 +181,7 @@ The following steps are performed from the command line from within the SAM CONF
 # - OriginBucketDomainForCloudFront
 
 # Don't forget to deploy if you skipped deployment during config
-./cli/deploy.py storage PREFIX MY_STATIC_ASSETS
+./cli/deploy.py storage PREFIX MY_STATIC_ASSETS --profile default
 ```
 
 ### Step 6: Deploy the CloudFront Distribution
@@ -225,14 +201,14 @@ The following steps are performed from the command line from within the SAM CONF
 # A custom domain record in Route 53 is optional
 # For now you can just use the CloudFront distribution url for testing and add a custom domain later
 
-./cli/config.py network PREFIX MY_STATIC_ASSETS test
+./cli/config.py network PREFIX MY_STATIC_ASSETS test --profile default
 # > Choose template-network-route53-cloudfront-s3-apigw.yml (it does not require api gateway)
 # > SET PARAMETERS
 # - You will need the OriginBucketDomainForCloudFront from the storage stack outputs
 # > ADD NEW TAG: AllowInvalidationEvents=true
 
 # Don't forget to deploy if you skipped deployment during config
-./cli/deploy.py network PREFIX MY_STATIC_ASSETS test
+./cli/deploy.py network PREFIX MY_STATIC_ASSETS test --profile default
 
 # All uploads to test/public are skipped, so to actually see invalidations you will need a PROD instance
 
@@ -240,8 +216,8 @@ The following steps are performed from the command line from within the SAM CONF
 # Don't forget:
 # - PARAMETER: OriginBucketDomainForCloudFront
 # - ADD NEW TAG: AllowInvalidationEvents=true
-./cli/config.py network PREFIX MY_STATIC_ASSETS prod
-./cli/deploy.py network PREFIX MY_STATIC_ASSETS prod
+./cli/config.py network PREFIX MY_STATIC_ASSETS prod --profile default
+./cli/deploy.py network PREFIX MY_STATIC_ASSETS prod --profile default
 ```
 
 ### Step 7: Test
@@ -346,7 +322,21 @@ Error: Origin path must start with '/'. Invalid value: 'app/{stageId}'.
 Examples: /app/{stageId}, /static, /{stageId}/public
 ```
 
-### Step 8: Move to Production
+### Step 8: Clone Repository
+
+Note that all changes must be made in the `dev` branch and merged to `test` branch to kick off a deployment.
+
+Clone your cache invalidator repository to your local machine:
+
+```bash
+git clone HTTPS_CLONE_URL
+
+cd YOUR_CLONED_REPO
+
+git switch dev
+```
+
+### Step 9: Move to Production
 
 The above commands using the Atlantis CLI scripts only deployed a TEST instance of the invalidator service. When ready to use it in production you should deploy a production instance and reconfigure your S3 buckets to use the PRODUCTION invalidator ARN. 
 
@@ -1064,6 +1054,81 @@ For detailed troubleshooting, see [Configuration Troubleshooting Guide](CONFIGUR
 3. **Maintain Documentation**: Keep deployment and configuration guides current
 4. **Plan for Growth**: Consider configuration needs as system scales
 
+## Development and Deploy Process
+
+Always make and commit your changes in `dev`
+
+Perform merges to advance code to the next branch. `dev` -> `test` -> `beta` -> `main`
+
+```bash
+git switch dev
+git switch test
+git merge dev
+git push
+# Always return to dev for new changes
+git switch dev
+```
+
+When you are ready to move code to the next stage, merge:
+
+```bash
+git switch test
+git pull # always a good idea
+git switch beta
+git pull # always a good idea
+git merge test
+git push
+# Always return to dev for new changes
+git switch dev
+```
+
+### Setting Up Pipelines
+
+For each branch/stage you wish to deploy from, set up a pipeline using your organization's central Atlantis SAM Config repository.
+
+There are several pipeline configurations to choose from. If you prefer to not use the branch merge strategy (`dev` -> `test` -> `beta` -> `main`) you can configure the pipeline to use an approval and promotion strategy instead. Cross account configuration is also available.
+
+All Atlantis pipeline templates support approval with promotion and cross-account deployment.
+
+#### Standard Branch-Merge-Based
+
+This will set up deployments for each branch and you will merge changes between them to deploy (`dev` -> `test` -> `beta` -> `main`).
+
+- This is the least complex as it is all Git-based (no logging into the console for approvals.)
+- **HOWEVER**: It requires discipline, only forward merges, and squash merges may produce unpredictable results.
+
+Choose template-pipeline.yml (CodeCommit source) or template-pipeline-github.yml and do not enable the approval and promotion configuration. 
+
+```bash
+# Create a pipeline for the beta branch
+./cli/config.py pipeline PREFIX YOUR_PROJECT_ID beta --profile default
+# Choose template-pipeline.yml (CodeCommit source) or template-pipeline-github.yml
+
+# Deploy the pipeline (if you didn't choose to deploy right away from the config script)
+./cli/deploy.py pipeline PREFIX YOUR_PROJECT_ID beta --profile default
+```
+
+#### Approve/Promote and/or Cross-Account
+
+> Cross-account deployments must use the approve/promote configuration.
+
+This will set up an automatic Git-based deployment for the `test` branch but to deploy your application to subsequent stages you will need to:
+
+1. Configure the `test` pipeline to promote to the next stage
+2. All subsequent deployment stages use `template-pipeline-s3-source.yml`
+
+Automated deployment process using approve/promote:
+
+1. The test pipeline will still run automatically when changes are merged to the `test` branch.
+2. Then, to promote to the next stage, go into the console for the test pipeline and choose approve promotion.
+3. The pipeline will then drop the deployment artifact in an S3 bucket, triggering the next pipeline (which can either be in the same account, or in a separate PROD account depending on your organization's policies).
+4. The receiving pipeline will then pick up the new artifact from S3 and await an approval to deploy.
+5. The end of this pipeline can also have an approval/promote option. (In case you deploy from test to beta to prod).
+
+You will still need to create one pipeline per stage and only the test branch will have a corresponding stage. (However, you _can_ set up the main branch, or any branch, to deploy to the initial "test" pipeline, it doesn't need to be the `test` branch. Just be sure to set the `StageId` to `test`). You can always create temporary pipelines using `template-pipeline.yml`/`template-pipeline-github.yml` for feature and bug fix test branches.
+
+> By default approval is required to promote and deploy both at the end of the pipeline (promote) and at the start of the next stage (approve). This provides optimal protection against run-away deployments. If you want to disable either the promote or deploy approval, it is recommended you disable the deploy approval at the start of the receiving stage to avoid creating too many deploy artifact versions.
+
 ## Support
 
 For deployment support:
@@ -1071,9 +1136,6 @@ For deployment support:
 1. **Check CloudFormation Events**: Review stack events for deployment issues
 2. **Review Lambda Logs**: Check function logs for runtime issues
 3. **Validate Configuration**: Verify all settings match intended behavior
-4. **Contact Platform Team**: Provide deployment logs and configuration details
-
-## Related Documentation
 
 - [Main README](README.md) - Complete system documentation
 - [Configuration Troubleshooting Guide](CONFIGURATION_TROUBLESHOOTING.md) - Detailed troubleshooting

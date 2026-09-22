@@ -8,7 +8,7 @@ An application stack that provisions a solution to invalidate CloudFront caches 
 | **Frameworks** | Atlantis, Hypothesis | Atlantis |
 | **Features** | SSM Parameters | EventBridge Scheduler, DynamoDB, SQS, Lambda, CloudWatch Logs, CloudWatch Alarms |
 
-> **Ready-to-Deploy-and-Run** with the [63Klabs Atlantis Templates and Scripts Platform for Serverless Deployments on AWS](https://github.com/63Klabs/atlantis)
+> **Ready-to-Deploy-and-Run** with the [63Klabs Atlantis DevOps Platform for Serverless Deployments on AWS](https://atlantis.63klabs.net)
 
 ## Architecture
 
@@ -53,15 +53,7 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for deployment instructions.
 
 ## Tutorials
 
-Read the [Atlantis Tutorials introductory page](https://github.com/63Klabs/atlantis-tutorials) for overall usage of Atlantis Platform Templates and Scripts.
-
-## Tutorial
-
-> For near production-ready examples, review the the other Atlantis starter applications.
-
-1. Read the [Atlantis Tutorials introductory page](https://github.com/63Klabs/atlantis-tutorials)
-2. Then perform the steps outlined in the [Basic API Gateway with Lambda Node.js tutorial](https://github.com/63Klabs/atlantis-tutorials/tree/main/tutorials/00-basic-api-gateway-with-lambda-written-in-node).
-3. This application is based off of Starter #01 so the following tutorial will be helpful as well: [Tutorial #1: Basic API Gateway with Lambda written in Python](https://github.com/63Klabs/atlantis-tutorials/blob/main/tutorials/01-basic-api-gateway-with-lambda-written-in-python/)
+Read the [Atlantis Tutorials introductory page](https://github.com/63Klabs/atlantis-tutorials) for overall usage of Atlantis DevOps Platform
 
 ## Architecture
 
